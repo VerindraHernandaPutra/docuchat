@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from rag import answer
 
 app = FastAPI(title="DocuChat")
 
@@ -11,8 +12,12 @@ class ChatRequest(BaseModel):      # aturan format request (validasi otomatis)
 def health():
     return {"status": "ok"}
 
-@app.post("/api/v1/chat")         # POST = kirim data
+@app.post("/api/v1/chat")
 def chat(req: ChatRequest):
     if not req.message.strip():
         raise HTTPException(status_code=400, detail="Pesan tidak boleh kosong")
-    return {"answer": f"(sementara) kamu bertanya: {req.message}", "sources": []}
+    try:
+        result = answer(req.message)
+    except Exception:
+        raise HTTPException(status_code=503, detail="Layanan LLM sedang tidak tersedia, coba lagi nanti")
+    return result
